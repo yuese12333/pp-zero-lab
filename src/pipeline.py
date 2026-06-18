@@ -55,9 +55,8 @@ class PipelineSimulator:
         self.model = model
         self.config = pipe_config
         self.device = device
-        self.stages = split_model_stages(model, pipe_config.num_stages)
-        for s in self.stages:
-            s.to(device)
+        self.model.to(device)
+        self.stages = split_model_stages(self.model, pipe_config.num_stages)
         self.profiler = Profiler()
 
     def _forward_stage(
