@@ -1,0 +1,1334 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PP-ZeRO 可视化系统</title>
+  <style>
+    :root {
+      --bg: #f5f6f3;
+      --panel: #ffffff;
+      --panel-2: #eef2ef;
+      --text: #18201d;
+      --muted: #5f6b66;
+      --line: #d7ded8;
+      --accent: #087f8c;
+      --accent-2: #b64b5a;
+      --accent-3: #7a5c00;
+      --accent-4: #4d5aa8;
+      --shadow: 0 12px 30px rgba(25, 35, 30, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .app {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 18px 20px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.25;
+      font-weight: 760;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button {
+      height: 36px;
+      border: 1px solid #bdc8c0;
+      border-radius: 6px;
+      background: #fdfefd;
+      color: var(--text);
+      padding: 0 12px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    button.primary:hover {
+      background: #066a74;
+      color: #fff;
+    }
+
+    .status {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .sim-panel {
+      margin-bottom: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .sim-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 18px 18px 8px;
+    }
+
+    .sim-controls {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 12px;
+      padding: 8px 18px 16px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    select {
+      width: 100%;
+      height: 38px;
+      padding: 0 10px;
+      border: 1px solid #bdc8c0;
+      border-radius: 6px;
+      background: #fdfefd;
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+    }
+
+    .sim-results {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1px;
+      margin: 0 18px 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--line);
+    }
+
+    .result-tile {
+      min-height: 92px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .result-label {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .result-value {
+      margin-top: 8px;
+      color: var(--text);
+      font-size: 22px;
+      line-height: 1.1;
+      font-weight: 780;
+    }
+
+    .result-sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .sim-warning {
+      margin: 0 18px 16px;
+      padding: 10px 12px;
+      border: 1px solid #ecd28f;
+      border-radius: 6px;
+      background: #fff8df;
+      color: #6f5600;
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .chart-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .chart-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 18px 8px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.35;
+      font-weight: 740;
+    }
+
+    .metric {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin: 10px 18px 0;
+      padding: 10px 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .control-value {
+      min-width: 64px;
+      color: var(--text);
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .chart-wrap {
+      width: 100%;
+      overflow: hidden;
+      padding: 0 12px 12px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #fff;
+      border-radius: 6px;
+    }
+
+    .axis text,
+    .legend text,
+    .mark-label,
+    .cell-label {
+      fill: #34413c;
+      font-size: 12px;
+    }
+
+    .axis path,
+    .axis line {
+      stroke: #8b9891;
+      stroke-width: 1;
+      shape-rendering: crispEdges;
+    }
+
+    .grid-line {
+      stroke: #e7ebe7;
+      stroke-width: 1;
+      shape-rendering: crispEdges;
+    }
+
+    .note {
+      margin: 0;
+      padding: 0 18px 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .error {
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: #fff0f0;
+      color: #7b1f2a;
+      border: 1px solid #f1c3c8;
+      border-radius: 8px;
+      display: none;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        padding: 16px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sim-head {
+        display: block;
+      }
+
+      .sim-controls,
+      .sim-results {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 520px) {
+      .chart-head {
+        display: block;
+      }
+
+      .chart-head button {
+        margin-top: 10px;
+      }
+
+      .sim-controls,
+      .sim-results {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>PP-ZeRO 可视化系统</h1>
+        <p class="subtitle">基于 results 目录下的四份 CSV，展示 ZeRO、流水线气泡率、PP×ZeRO 组合与规模扫描结果。</p>
+        <div id="status" class="status">正在读取 CSV...</div>
+        <div id="error" class="error"></div>
+      </div>
+      <div class="actions">
+        <button id="refreshButton" type="button">刷新数据</button>
+        <button id="exportAllButton" class="primary" type="button">导出全部 PNG</button>
+      </div>
+    </header>
+
+    <section class="sim-panel" aria-labelledby="sim-title">
+      <div class="sim-head">
+        <div>
+          <h2 id="sim-title">交互式实验参数面板</h2>
+          <p class="metric" id="sim-summary">选择 P / N / ZeRO stage / M，动态读取组合显存与气泡-有效算力指标。</p>
+        </div>
+      </div>
+      <div class="sim-controls">
+        <div class="field">
+          <label for="simP">流水线段数 P / K</label>
+          <select id="simP" aria-label="选择流水线段数"></select>
+        </div>
+        <div class="field">
+          <label for="simN">数据并行度 N</label>
+          <select id="simN" aria-label="选择数据并行度"></select>
+        </div>
+        <div class="field">
+          <label for="simZero">ZeRO Stage</label>
+          <select id="simZero" aria-label="选择 ZeRO Stage"></select>
+        </div>
+        <div class="field">
+          <label for="simM">微批次数 M</label>
+          <select id="simM" aria-label="选择微批次数"></select>
+        </div>
+      </div>
+      <div class="sim-results">
+        <div class="result-tile">
+          <div class="result-label">每卡模型状态显存</div>
+          <div class="result-value" id="simMem">--</div>
+          <div class="result-sub" id="simMemSub">来自 combo.csv</div>
+        </div>
+        <div class="result-tile">
+          <div class="result-label">相对 Baseline 压缩</div>
+          <div class="result-value" id="simCompression">--</div>
+          <div class="result-sub">vs_baseline_x</div>
+        </div>
+        <div class="result-tile">
+          <div class="result-label">总 GPU 数</div>
+          <div class="result-value" id="simTotalGpu">--</div>
+          <div class="result-sub">P × N</div>
+        </div>
+        <div class="result-tile">
+          <div class="result-label">气泡率</div>
+          <div class="result-value" id="simBubble">--</div>
+          <div class="result-sub">来自 tradeoff.csv</div>
+        </div>
+        <div class="result-tile">
+          <div class="result-label">有效算力</div>
+          <div class="result-value" id="simEffective">--</div>
+          <div class="result-sub">(1 - bubble) × 100</div>
+        </div>
+      </div>
+      <div class="sim-warning" id="simWarning"></div>
+    </section>
+
+    <section class="grid">
+      <article class="chart-card" id="card-zero-theory">
+        <div class="chart-head">
+          <div>
+            <h2>图1 · ZeRO 多卡显存阶梯图</h2>
+            <p class="metric" id="metric-zero-theory"></p>
+          </div>
+          <button type="button" data-export="chart-zero-theory">PNG</button>
+        </div>
+        <div class="control-row">
+          <label for="gpuSlider">GPU 数</label>
+          <input id="gpuSlider" type="range" min="0" max="4" step="1" value="4" aria-label="选择 GPU 数" />
+          <span class="control-value" id="gpuSliderValue">N=64</span>
+        </div>
+        <div class="chart-wrap">
+          <svg id="chart-zero-theory" viewBox="0 0 940 540" role="img" aria-label="ZeRO 多卡显存阶梯图"></svg>
+        </div>
+        <p class="note">拖动 GPU 数滑块可动态高亮对应卡数下四种 ZeRO stage 的每卡显存；Baseline 未做状态分片，按 N=1 理论值补齐为水平参考。</p>
+      </article>
+
+      <article class="chart-card" id="card-bubble">
+        <div class="chart-head">
+          <div>
+            <h2>图2 · 气泡率与显存随微批次数下降</h2>
+            <p class="metric" id="metric-bubble"></p>
+          </div>
+          <button type="button" data-export="chart-bubble">PNG</button>
+        </div>
+        <div class="chart-wrap">
+          <svg id="chart-bubble" viewBox="0 0 940 540" role="img" aria-label="气泡率与显存随微批次数下降"></svg>
+        </div>
+        <p class="note">左图显示 M 增大时流水线气泡率下降；右图显示 bubble 扫描中每卡显存从约 4.07GB 降至 0.70GB，micro-batch 越小，激活显存越低。</p>
+      </article>
+
+      <article class="chart-card" id="card-combo">
+        <div class="chart-head">
+          <div>
+            <h2>图3 · PP×ZeRO 组合显存热力图</h2>
+            <p class="metric" id="metric-combo"></p>
+          </div>
+          <button type="button" data-export="chart-combo">PNG</button>
+        </div>
+        <div class="chart-wrap">
+          <svg id="chart-combo" viewBox="0 0 940 540" role="img" aria-label="PP×ZeRO 组合显存热力图"></svg>
+        </div>
+        <p class="note">颜色表示相对 Baseline 的压缩倍数；P=4、ZeRO-3、N=8 对应 32.0×，P=8、ZeRO-3、N=8 对应 64.0×。</p>
+      </article>
+
+      <article class="chart-card" id="card-tradeoff">
+        <div class="chart-head">
+          <div>
+            <h2>图4 · 气泡-有效算力权衡前沿</h2>
+            <p class="metric" id="metric-tradeoff"></p>
+          </div>
+          <button type="button" data-export="chart-tradeoff">PNG</button>
+        </div>
+        <div class="chart-wrap">
+          <svg id="chart-tradeoff" viewBox="0 0 940 540" role="img" aria-label="气泡-有效算力权衡前沿"></svg>
+        </div>
+        <p class="note">K 越小、M 越大，有效算力越接近 100%；该图给出不同流水线深度下逼近低气泡的路径。</p>
+      </article>
+
+      <article class="chart-card" id="card-scale">
+        <div class="chart-head">
+          <div>
+            <h2>图5 · 模型规模 vs 显存/吞吐双轴图</h2>
+            <p class="metric" id="metric-scale"></p>
+          </div>
+          <button type="button" data-export="chart-scale">PNG</button>
+        </div>
+        <div class="chart-wrap">
+          <svg id="chart-scale" viewBox="0 0 940 540" role="img" aria-label="模型规模 vs 显存吞吐双轴图"></svg>
+        </div>
+        <p class="note">参数规模从 6.8M 增至 51.0M，显存升高至 4.80GB，吞吐下降至 2021 samples/s。</p>
+      </article>
+
+      <article class="chart-card" id="card-single">
+        <div class="chart-head">
+          <div>
+            <h2>图6 · 单卡实测对比柱状图</h2>
+            <p class="metric" id="metric-single"></p>
+          </div>
+          <button type="button" data-export="chart-single">PNG</button>
+        </div>
+        <div class="chart-wrap">
+          <svg id="chart-single" viewBox="0 0 940 540" role="img" aria-label="单卡实测对比柱状图"></svg>
+        </div>
+        <p class="note">单卡 ZeRO 无法跨卡分片，DeepSpeed 额外开销会使显存不降反升；多卡趋势以图1理论值为准。</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const CHARTS = [
+      { id: "chart-zero-theory", file: "figure1_zero_memory.png" },
+      { id: "chart-bubble", file: "figure2_bubble_curve.png" },
+      { id: "chart-combo", file: "figure3_pp_zero_heatmap.png" },
+      { id: "chart-tradeoff", file: "figure4_tradeoff_frontier.png" },
+      { id: "chart-scale", file: "figure5_scale_dual_axis.png" },
+      { id: "chart-single", file: "figure6_single_card_compare.png" }
+    ];
+
+    const DATA_FILES = {
+      metrics: "../results/metrics.csv",
+      sweep: "../results/sweep.csv",
+      combo: "../results/combo.csv",
+      tradeoff: "../results/tradeoff.csv"
+    };
+
+    const REQUIRED_COLUMNS = {
+      metrics: ["config", "category", "stage", "num_gpus", "micro_batches", "mem_per_gpu_gb", "throughput_samples_s", "bubble_ratio", "comm_volume"],
+      sweep: ["sweep_type", "schedule", "num_stages", "micro_batches", "n_layer", "n_embd", "params", "bubble_theory", "bubble_measured", "bubble_abs_err", "mem_per_gpu_gb", "throughput_samples_s", "step_time_ms"],
+      combo: ["exp", "pipeline_stages_P", "zero_stage", "dp_degree_N", "total_gpus", "params_total", "params_per_stage", "mem_per_gpu_gb", "vs_baseline_x"],
+      tradeoff: ["exp", "num_stages_K", "micro_batches_M", "bubble_ratio", "effective_compute_pct"]
+    };
+
+    const palette = {
+      zero: ["#5d6d7e", "#0b7a75", "#c66a00", "#9a3d63"],
+      lines: ["#087f8c", "#b64b5a", "#7a5c00", "#4d5aa8", "#3f6f3f"],
+      mem: "#0b7a75",
+      throughput: "#c66a00",
+      grid: "#e7ebe7",
+      axis: "#8b9891",
+      text: "#18201d",
+      muted: "#5f6b66"
+    };
+
+    let latestData = null;
+    let selectedGpu = 64;
+    const gpuSliderValues = [1, 4, 8, 16, 64];
+    const simState = { p: 4, n: 8, zero: 3, m: 32 };
+
+    document.getElementById("refreshButton").addEventListener("click", init);
+    document.getElementById("gpuSlider").addEventListener("input", (event) => {
+      selectedGpu = gpuSliderValues[Number(event.target.value)];
+      document.getElementById("gpuSliderValue").textContent = `N=${selectedGpu}`;
+      if (latestData) {
+        renderZeroTheory(latestData.metrics);
+      }
+    });
+    ["simP", "simN", "simZero", "simM"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", (event) => {
+        const value = Number(event.target.value);
+        if (id === "simP") simState.p = value;
+        if (id === "simN") simState.n = value;
+        if (id === "simZero") simState.zero = value;
+        if (id === "simM") simState.m = value;
+        updateSimulationPanel();
+      });
+    });
+    document.getElementById("exportAllButton").addEventListener("click", async () => {
+      for (const chart of CHARTS) {
+        await exportSvgAsPng(chart.id, chart.file);
+      }
+    });
+
+    document.querySelectorAll("[data-export]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const id = button.getAttribute("data-export");
+        const chart = CHARTS.find((item) => item.id === id);
+        exportSvgAsPng(id, chart.file);
+      });
+    });
+
+    window.addEventListener("load", init);
+
+    async function init() {
+      setStatus("正在读取 CSV...");
+      showError("");
+      try {
+        const entries = await Promise.all(
+          Object.entries(DATA_FILES).map(async ([name, path]) => {
+            const csv = await fetchText(path);
+            const rows = parseCsv(csv);
+            validateColumns(name, rows.columns);
+            return [name, rows.data];
+          })
+        );
+        latestData = Object.fromEntries(entries);
+        setupSimulationPanel(latestData);
+        renderAll(latestData);
+        const counts = Object.entries(latestData).map(([name, rows]) => `${name}: ${rows.length}`).join(" | ");
+        setStatus(`数据已加载：${counts}`);
+      } catch (error) {
+        console.error(error);
+        setStatus("数据加载失败");
+        showError(`无法读取或解析 CSV：${error.message}。请从项目根目录启动本地 HTTP 服务后访问 viz/index.html。`);
+      }
+    }
+
+    async function fetchText(path) {
+      const response = await fetch(path, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`${path} 返回 ${response.status}`);
+      }
+      return response.text();
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let field = "";
+      let row = [];
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            field += '"';
+            i += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === "," && !inQuotes) {
+          row.push(field);
+          field = "";
+        } else if ((char === "\n" || char === "\r") && !inQuotes) {
+          if (char === "\r" && next === "\n") {
+            i += 1;
+          }
+          row.push(field);
+          if (row.some((item) => item !== "")) {
+            rows.push(row);
+          }
+          row = [];
+          field = "";
+        } else {
+          field += char;
+        }
+      }
+
+      if (field !== "" || row.length > 0) {
+        row.push(field);
+        if (row.some((item) => item !== "")) {
+          rows.push(row);
+        }
+      }
+
+      const columns = rows.shift() || [];
+      const data = rows.map((values) => Object.fromEntries(columns.map((column, index) => [column, values[index] ?? ""])));
+      return { columns, data };
+    }
+
+    function validateColumns(name, columns) {
+      const missing = REQUIRED_COLUMNS[name].filter((column) => !columns.includes(column));
+      if (missing.length > 0) {
+        throw new Error(`${name}.csv 缺少列：${missing.join(", ")}`);
+      }
+    }
+
+    function renderAll(data) {
+      renderZeroTheory(data.metrics);
+      renderBubble(data.sweep);
+      renderCombo(data.combo);
+      renderTradeoff(data.tradeoff);
+      renderScale(data.sweep);
+      renderSingleCard(data.metrics);
+    }
+
+    function setupSimulationPanel(data) {
+      const comboRows = data.combo.filter((row) => row.exp === "combo");
+      const tradeoffRows = data.tradeoff.filter((row) => row.exp === "tradeoff");
+      const pValues = unique(comboRows.map((row) => num(row.pipeline_stages_P))).sort((a, b) => a - b);
+      const nValues = unique(comboRows.map((row) => num(row.dp_degree_N))).sort((a, b) => a - b);
+      const zeroValues = unique(comboRows.map((row) => num(row.zero_stage))).sort((a, b) => a - b);
+      const mValues = unique(tradeoffRows.map((row) => num(row.micro_batches_M))).sort((a, b) => a - b);
+
+      fillSelect("simP", pValues, (value) => `${value}`, simState.p);
+      fillSelect("simN", nValues, (value) => `${value}`, simState.n);
+      fillSelect("simZero", zeroValues, (value) => value === 0 ? "Baseline / ZeRO-0" : `ZeRO-${value}`, simState.zero);
+      fillSelect("simM", mValues, (value) => `${value}`, simState.m);
+
+      simState.p = readSelectNumber("simP");
+      simState.n = readSelectNumber("simN");
+      simState.zero = readSelectNumber("simZero");
+      simState.m = readSelectNumber("simM");
+      updateSimulationPanel();
+    }
+
+    function updateSimulationPanel() {
+      if (!latestData) return;
+      const comboRow = latestData.combo.find((row) =>
+        row.exp === "combo" &&
+        num(row.pipeline_stages_P) === simState.p &&
+        num(row.zero_stage) === simState.zero &&
+        num(row.dp_degree_N) === simState.n
+      );
+      const tradeoffRow = latestData.tradeoff.find((row) =>
+        row.exp === "tradeoff" &&
+        num(row.num_stages_K) === simState.p &&
+        num(row.micro_batches_M) === simState.m
+      );
+
+      const warnings = [];
+      if (comboRow) {
+        setText("simMem", `${fmt(num(comboRow.mem_per_gpu_gb), 4)}GB`);
+        setText("simCompression", `${fmt(num(comboRow.vs_baseline_x), 2)}×`);
+        setText("simTotalGpu", fmt(num(comboRow.total_gpus), 0));
+        setText("simMemSub", `参数/段：${fmt(num(comboRow.params_per_stage), 0)}`);
+      } else {
+        setText("simMem", "--");
+        setText("simCompression", "--");
+        setText("simTotalGpu", fmt(simState.p * simState.n, 0));
+        setText("simMemSub", "combo.csv 无直接组合");
+        warnings.push(`combo.csv 中没有 P=${simState.p}, N=${simState.n}, ZeRO-${simState.zero} 的显存组合。Baseline/ZeRO-0 不做数据并行分片，因此通常只有 N=1。`);
+      }
+
+      if (tradeoffRow) {
+        setText("simBubble", pct(num(tradeoffRow.bubble_ratio)));
+        setText("simEffective", `${fmt(num(tradeoffRow.effective_compute_pct), 2)}%`);
+      } else {
+        setText("simBubble", "--");
+        setText("simEffective", "--");
+        warnings.push(`tradeoff.csv 中没有 K=${simState.p}, M=${simState.m} 的气泡率组合；当前数据支持 K=2/4/8/16。`);
+      }
+
+      const zeroLabel = simState.zero === 0 ? "Baseline" : `ZeRO-${simState.zero}`;
+      setText("sim-summary", `当前组合：P/K=${simState.p}, N=${simState.n}, ${zeroLabel}, M=${simState.m}。显存来自 PP×ZeRO 组合建模，气泡与有效算力来自 K×M 权衡网格。`);
+      const warningBox = document.getElementById("simWarning");
+      warningBox.textContent = warnings.join(" ");
+      warningBox.style.display = warnings.length > 0 ? "block" : "none";
+    }
+
+    function renderZeroTheory(metrics) {
+      const svg = resetSvg("chart-zero-theory");
+      const rows = metrics.filter((row) => row.category === "zero_theory");
+      assertRows(rows, "metrics.csv 中没有 category=zero_theory 的数据");
+      const gpuValues = gpuSliderValues;
+      if (!gpuValues.includes(selectedGpu)) {
+        selectedGpu = 64;
+      }
+      document.getElementById("gpuSlider").value = String(gpuValues.indexOf(selectedGpu));
+      document.getElementById("gpuSliderValue").textContent = `N=${selectedGpu}`;
+      const baselineRow = rows.find((row) => num(row.stage) === 0) || rows.find((row) => row.config === "baseline_theory");
+      const series = [0, 1, 2, 3].map((stage) => {
+        const stageRows = rows.filter((row) => num(row.stage) === stage);
+        let points;
+        if (stage === 0) {
+          const baselineMem = baselineRow ? num(baselineRow.mem_per_gpu_gb) : 0;
+          points = gpuValues.map((gpu) => ({ x: gpu, y: baselineMem }));
+        } else {
+          points = gpuValues
+            .map((gpu) => stageRows.find((row) => num(row.num_gpus) === gpu))
+            .filter(Boolean)
+            .map((row) => ({ x: num(row.num_gpus), y: num(row.mem_per_gpu_gb) }));
+        }
+        return { name: stage === 0 ? "Baseline" : `ZeRO-${stage}`, stage, points };
+      });
+
+      const dims = dimsForPlot();
+      const yMax = niceMax(Math.max(...series.flatMap((item) => item.points.map((point) => point.y))));
+      const xScale = scaleLog2([1, 64], [dims.left, dims.right]);
+      const yScale = scaleLinear([0, yMax], [dims.bottom, dims.top]);
+      drawFrame(svg, dims, {
+        yTicks: ticks(0, yMax, 6),
+        yScale,
+        xTicks: gpuValues.map((value) => ({ value, label: String(value), x: xScale(value) })),
+        xLabel: "GPU 数 N",
+        yLabel: "每卡模型状态显存 (GB)"
+      });
+      drawReferenceLine(svg, dims, yScale(0.12), "0.12GB 参考线");
+
+      series.forEach((item) => {
+        drawLine(svg, item.points, xScale, yScale, palette.zero[item.stage], item.stage === 0 ? "6 5" : "");
+        drawPoints(svg, item.points, xScale, yScale, palette.zero[item.stage]);
+      });
+
+      const selectedX = xScale(selectedGpu);
+      line(svg, selectedX, dims.top, selectedX, dims.bottom, { stroke: "#2e3431", "stroke-width": 1.4, "stroke-dasharray": "4 4" });
+      const selectedRows = series.map((item) => ({
+        name: item.name,
+        stage: item.stage,
+        point: item.points.find((point) => point.x === selectedGpu)
+      })).filter((item) => item.point);
+      selectedRows.forEach((item, index) => {
+        circle(svg, selectedX, yScale(item.point.y), 7.5, { fill: palette.zero[item.stage], stroke: "#ffffff", "stroke-width": 2.5 });
+        drawText(svg, selectedX + 11, yScale(item.point.y) + 4 + index * 2, `${item.name}: ${fmt(item.point.y, 3)}GB`, "mark-label", "start", palette.zero[item.stage], 12, 700);
+      });
+      drawText(svg, selectedX, dims.top - 16, `当前 N=${selectedGpu}`, "mark-label", "middle", "#2e3431", 13, 750);
+
+      const zero3 = series.find((item) => item.stage === 3).points.find((point) => point.x === 64);
+      if (zero3) {
+        drawText(svg, xScale(64) - 78, yScale(zero3.y) - 15, `ZeRO-3 @64: ${fmt(zero3.y, 3)}GB`, "mark-label", "start");
+      }
+      drawLegend(svg, series.map((item, index) => ({ label: item.name, color: palette.zero[index], dash: item.stage === 0 ? "6 5" : "" })), dims.left, 32);
+      const selectedSummary = selectedRows.map((item) => `${item.name} ${fmt(item.point.y, 3)}GB`).join("，");
+      document.getElementById("metric-zero-theory").textContent = `当前 N=${selectedGpu}：${selectedSummary}；zero3@64 = ${fmt(zero3?.y ?? 0, 3)}GB。`;
+    }
+
+    function renderBubble(sweep) {
+      const svg = resetSvg("chart-bubble");
+      const rows = sweep.filter((row) => row.sweep_type === "bubble");
+      assertRows(rows, "sweep.csv 中没有 sweep_type=bubble 的数据");
+      const schedules = ["gpipe", "1f1b"];
+      const series = schedules.map((schedule) => ({
+        name: schedule.toUpperCase(),
+        points: rows
+          .filter((row) => row.schedule === schedule)
+          .map((row) => ({ x: num(row.micro_batches), y: num(row.bubble_theory) }))
+          .sort((a, b) => a.x - b.x)
+      }));
+      const leftDims = { left: 78, right: 444, top: 90, bottom: 420 };
+      const rightDims = { left: 550, right: 850, top: 90, bottom: 420 };
+      const xValues = unique(rows.map((row) => num(row.micro_batches))).sort((a, b) => a - b);
+      const xScale = scaleLog2([Math.min(...xValues), Math.max(...xValues)], [leftDims.left, leftDims.right]);
+      const yScale = scaleLinear([0, 0.8], [leftDims.bottom, leftDims.top]);
+      drawText(svg, (leftDims.left + leftDims.right) / 2, 56, "气泡率随 M 下降", "mark-label", "middle", palette.text, 15, 750);
+      drawFrame(svg, leftDims, {
+        yTicks: ticks(0, 0.8, 5).map((value) => ({ value, label: pct(value) })),
+        yScale,
+        xTicks: xValues.map((value) => ({ value, label: String(value), x: xScale(value) })),
+        xLabel: "微批次数 M",
+        yLabel: "气泡率"
+      });
+      series.forEach((item, index) => {
+        drawLine(svg, item.points, xScale, yScale, palette.lines[index], index === 1 ? "8 5" : "");
+        drawPoints(svg, item.points, xScale, yScale, palette.lines[index]);
+      });
+      drawLegend(svg, series.map((item, index) => ({ label: item.name, color: palette.lines[index], dash: index === 1 ? "8 5" : "" })), leftDims.left, 32);
+      const first = series[0].points[0];
+      const last = series[0].points[series[0].points.length - 1];
+      drawText(svg, xScale(last.x) - 115, yScale(last.y) - 16, `${pct(last.y)} at M=${last.x}`, "mark-label", "start");
+
+      const memRows = rows
+        .filter((row) => row.schedule === "gpipe")
+        .map((row) => ({ x: num(row.micro_batches), y: num(row.mem_per_gpu_gb) }))
+        .sort((a, b) => a.x - b.x);
+      const memXScale = scaleLog2([Math.min(...xValues), Math.max(...xValues)], [rightDims.left, rightDims.right]);
+      const memMax = niceMax(Math.max(...memRows.map((row) => row.y)));
+      const memYScale = scaleLinear([0, memMax], [rightDims.bottom, rightDims.top]);
+      drawText(svg, (rightDims.left + rightDims.right) / 2, 56, "显存随 M 下降", "mark-label", "middle", palette.text, 15, 750);
+      drawFrame(svg, rightDims, {
+        yTicks: ticks(0, memMax, 6),
+        yScale: memYScale,
+        xTicks: xValues.map((value) => ({ value, label: String(value), x: memXScale(value) })),
+        xLabel: "微批次数 M",
+        yLabel: "每卡显存 (GB)",
+        yLabelX: rightDims.left - 44
+      });
+      drawLine(svg, memRows, memXScale, memYScale, palette.mem);
+      drawPoints(svg, memRows, memXScale, memYScale, palette.mem);
+      const memFirst = memRows[0];
+      const memLast = memRows[memRows.length - 1];
+      drawText(svg, memXScale(memFirst.x) + 8, memYScale(memFirst.y) - 10, `${fmt(memFirst.y, 2)}GB`, "mark-label", "start", palette.mem, 12, 700);
+      drawText(svg, memXScale(memLast.x) - 62, memYScale(memLast.y) - 12, `${fmt(memLast.y, 2)}GB`, "mark-label", "start", palette.mem, 12, 700);
+      drawLegend(svg, [{ label: "GPipe 显存", color: palette.mem }], rightDims.left, 32);
+
+      document.getElementById("metric-bubble").textContent = `气泡率 M=${first.x}→${last.x}: ${pct(first.y)}→${pct(last.y)}；显存 ${fmt(memFirst.y, 2)}GB→${fmt(memLast.y, 2)}GB。`;
+    }
+
+    function renderCombo(combo) {
+      const svg = resetSvg("chart-combo");
+      const pValues = [1, 2, 4, 8];
+      const stages = [0, 1, 2, 3];
+      const rows = combo.filter((row) => row.exp === "combo");
+      assertRows(rows, "combo.csv 中没有 exp=combo 的数据");
+      const matrix = pValues.map((p) => stages.map((stage) => {
+        const row = stage === 0
+          ? rows.find((item) => num(item.pipeline_stages_P) === p && num(item.zero_stage) === 0)
+          : rows.find((item) => num(item.pipeline_stages_P) === p && num(item.zero_stage) === stage && num(item.dp_degree_N) === 8);
+        return row ? num(row.vs_baseline_x) : null;
+      }));
+      const values = matrix.flat().filter((value) => value !== null);
+      const dims = { left: 155, right: 815, top: 78, bottom: 438 };
+      const cellW = (dims.right - dims.left) / stages.length;
+      const cellH = (dims.bottom - dims.top) / pValues.length;
+      drawText(svg, 470, 38, "dp_degree_N = 8，色值 = vs_baseline_x", "mark-label", "middle");
+      stages.forEach((stage, col) => {
+        drawText(svg, dims.left + cellW * col + cellW / 2, dims.top - 20, stage === 0 ? "Baseline" : `ZeRO-${stage}`, "mark-label", "middle");
+      });
+      pValues.forEach((p, row) => {
+        drawText(svg, dims.left - 28, dims.top + cellH * row + cellH / 2 + 5, `P=${p}`, "mark-label", "end");
+      });
+      matrix.forEach((line, row) => {
+        line.forEach((value, col) => {
+          const x = dims.left + cellW * col;
+          const y = dims.top + cellH * row;
+          const fill = value === null ? "#f1f3f0" : heatColor(value, Math.min(...values), Math.max(...values));
+          rect(svg, x + 4, y + 4, cellW - 8, cellH - 8, { fill, stroke: "#ffffff", "stroke-width": 2, rx: 4 });
+          const strong = value !== null && value >= 16;
+          drawText(svg, x + cellW / 2, y + cellH / 2 + 5, value === null ? "" : `${fmt(value, 1)}×`, "cell-label", "middle", strong ? "#ffffff" : "#18201d", 18, 760);
+        });
+      });
+      drawHeatLegend(svg, 835, dims.top + 4, dims.bottom - dims.top - 8, Math.min(...values), Math.max(...values));
+      const target32 = rows.find((row) => num(row.pipeline_stages_P) === 4 && num(row.zero_stage) === 3 && num(row.dp_degree_N) === 8);
+      const target64 = rows.find((row) => num(row.pipeline_stages_P) === 8 && num(row.zero_stage) === 3 && num(row.dp_degree_N) === 8);
+      document.getElementById("metric-combo").textContent = `P=4 × ZeRO-3 × N=8：${fmt(num(target32?.vs_baseline_x), 1)}×；最大值：${fmt(num(target64?.vs_baseline_x), 1)}×。`;
+    }
+
+    function renderTradeoff(tradeoff) {
+      const svg = resetSvg("chart-tradeoff");
+      const rows = tradeoff.filter((row) => row.exp === "tradeoff");
+      assertRows(rows, "tradeoff.csv 中没有 exp=tradeoff 的数据");
+      const kValues = [2, 4, 8, 16];
+      const series = kValues.map((k) => ({
+        name: `K=${k}`,
+        points: rows
+          .filter((row) => num(row.num_stages_K) === k)
+          .map((row) => ({ x: num(row.micro_batches_M), y: num(row.effective_compute_pct) }))
+          .sort((a, b) => a.x - b.x)
+      }));
+      const dims = dimsForPlot();
+      const xValues = unique(rows.map((row) => num(row.micro_batches_M))).sort((a, b) => a - b);
+      const xScale = scaleLog2([Math.min(...xValues), Math.max(...xValues)], [dims.left, dims.right]);
+      const yScale = scaleLinear([0, 100], [dims.bottom, dims.top]);
+      drawFrame(svg, dims, {
+        yTicks: ticks(0, 100, 6).map((value) => ({ value, label: `${value}%` })),
+        yScale,
+        xTicks: xValues.map((value) => ({ value, label: String(value), x: xScale(value) })),
+        xLabel: "微批次数 M",
+        yLabel: "有效算力占比"
+      });
+      series.forEach((item, index) => {
+        drawLine(svg, item.points, xScale, yScale, palette.lines[index]);
+        drawPoints(svg, item.points, xScale, yScale, palette.lines[index]);
+        const last = item.points[item.points.length - 1];
+        drawText(svg, xScale(last.x) + 8, yScale(last.y) + 4, item.name, "mark-label", "start", palette.lines[index]);
+      });
+      drawLegend(svg, series.map((item, index) => ({ label: item.name, color: palette.lines[index] })), dims.left, 32);
+      const best = rows.reduce((acc, row) => num(row.effective_compute_pct) > num(acc.effective_compute_pct) ? row : acc, rows[0]);
+      document.getElementById("metric-tradeoff").textContent = `最高有效算力：K=${best.num_stages_K}, M=${best.micro_batches_M}, ${fmt(num(best.effective_compute_pct), 2)}%。`;
+    }
+
+    function renderScale(sweep) {
+      const svg = resetSvg("chart-scale");
+      const rows = sweep
+        .filter((row) => row.sweep_type === "scale")
+        .map((row) => ({ params: num(row.params), mem: num(row.mem_per_gpu_gb), throughput: num(row.throughput_samples_s) }))
+        .sort((a, b) => a.params - b.params);
+      assertRows(rows, "sweep.csv 中没有 sweep_type=scale 的数据");
+      const dims = dimsForPlot();
+      const x = bandScale(rows.map((row) => paramsLabel(row.params)), [dims.left, dims.right], 0.34);
+      const yMem = scaleLinear([0, niceMax(Math.max(...rows.map((row) => row.mem)))], [dims.bottom, dims.top]);
+      const yThroughput = scaleLinear([0, niceMax(Math.max(...rows.map((row) => row.throughput)))], [dims.bottom, dims.top]);
+      drawFrame(svg, dims, {
+        yTicks: ticks(0, niceMax(Math.max(...rows.map((row) => row.mem))), 6),
+        yScale: yMem,
+        xTicks: rows.map((row) => ({ label: paramsLabel(row.params), x: x.center(paramsLabel(row.params)) })),
+        xLabel: "模型参数量",
+        yLabel: "显存 (GB)"
+      });
+      drawRightAxis(svg, dims, yThroughput, ticks(0, niceMax(Math.max(...rows.map((row) => row.throughput))), 6), "吞吐 (samples/s)");
+      rows.forEach((row) => {
+        const label = paramsLabel(row.params);
+        const barX = x.start(label) + x.bandwidth * 0.18;
+        const barW = x.bandwidth * 0.64;
+        rect(svg, barX, yMem(row.mem), barW, dims.bottom - yMem(row.mem), { fill: palette.mem, opacity: 0.88, rx: 4 });
+        drawText(svg, barX + barW / 2, yMem(row.mem) - 8, fmt(row.mem, 2), "mark-label", "middle", palette.mem);
+      });
+      const linePoints = rows.map((row) => ({ x: x.center(paramsLabel(row.params)), y: row.throughput }));
+      drawLine(svg, linePoints, (value) => value, yThroughput, palette.throughput);
+      drawPoints(svg, linePoints, (value) => value, yThroughput, palette.throughput);
+      drawLegend(svg, [
+        { label: "显存", color: palette.mem, square: true },
+        { label: "吞吐", color: palette.throughput }
+      ], dims.left, 32);
+      const first = rows[0];
+      const last = rows[rows.length - 1];
+      document.getElementById("metric-scale").textContent = `${paramsLabel(first.params)} → ${paramsLabel(last.params)}：显存 ${fmt(first.mem, 2)}GB → ${fmt(last.mem, 2)}GB，吞吐 ${fmt(first.throughput, 0)} → ${fmt(last.throughput, 0)}。`;
+    }
+
+    function renderSingleCard(metrics) {
+      const svg = resetSvg("chart-single");
+      const order = ["baseline", "zero1", "zero2", "zero3", "gpipe", "1f1b"];
+      const rows = metrics
+        .filter((row) => row.category === "zero" || row.category === "pipeline")
+        .sort((a, b) => order.indexOf(a.config) - order.indexOf(b.config))
+        .map((row) => ({ config: row.config, category: row.category, mem: num(row.mem_per_gpu_gb), throughput: num(row.throughput_samples_s) }));
+      assertRows(rows, "metrics.csv 中没有单卡实测数据");
+      const dims = dimsForPlot();
+      const x = bandScale(rows.map((row) => row.config), [dims.left, dims.right], 0.24);
+      const yMem = scaleLinear([0, niceMax(Math.max(...rows.map((row) => row.mem)))], [dims.bottom, dims.top]);
+      const yThroughput = scaleLinear([0, niceMax(Math.max(...rows.map((row) => row.throughput)))], [dims.bottom, dims.top]);
+      drawFrame(svg, dims, {
+        yTicks: ticks(0, niceMax(Math.max(...rows.map((row) => row.mem))), 6),
+        yScale: yMem,
+        xTicks: rows.map((row) => ({ label: row.config, x: x.center(row.config) })),
+        xLabel: "单卡配置",
+        yLabel: "显存 (GB)"
+      });
+      drawRightAxis(svg, dims, yThroughput, ticks(0, niceMax(Math.max(...rows.map((row) => row.throughput))), 6), "吞吐 (samples/s)");
+      rows.forEach((row) => {
+        const start = x.start(row.config);
+        const gap = x.bandwidth * 0.12;
+        const barW = x.bandwidth * 0.32;
+        rect(svg, start + x.bandwidth * 0.18, yMem(row.mem), barW, dims.bottom - yMem(row.mem), { fill: palette.mem, opacity: 0.88, rx: 4 });
+        rect(svg, start + x.bandwidth * 0.18 + barW + gap, yThroughput(row.throughput), barW, dims.bottom - yThroughput(row.throughput), { fill: palette.throughput, opacity: 0.86, rx: 4 });
+      });
+      drawLegend(svg, [
+        { label: "显存", color: palette.mem, square: true },
+        { label: "吞吐", color: palette.throughput, square: true }
+      ], dims.left, 32);
+      const baseline = rows.find((row) => row.config === "baseline");
+      const zero3 = rows.find((row) => row.config === "zero3");
+      if (baseline && zero3) {
+        drawText(svg, x.center("zero3") - 28, yMem(zero3.mem) - 12, `单卡 ZeRO-3: ${fmt(zero3.mem, 2)}GB`, "mark-label", "middle", palette.mem);
+      }
+      document.getElementById("metric-single").textContent = `Baseline ${fmt(baseline?.mem ?? 0, 2)}GB / ${fmt(baseline?.throughput ?? 0, 0)} samples/s；ZeRO-3 ${fmt(zero3?.mem ?? 0, 2)}GB / ${fmt(zero3?.throughput ?? 0, 0)} samples/s。`;
+    }
+
+    function dimsForPlot() {
+      return { left: 78, right: 824, top: 76, bottom: 438 };
+    }
+
+    function resetSvg(id) {
+      const svg = document.getElementById(id);
+      while (svg.firstChild) {
+        svg.removeChild(svg.firstChild);
+      }
+      rect(svg, 0, 0, 940, 540, { fill: "#ffffff" });
+      return svg;
+    }
+
+    function drawFrame(svg, dims, config) {
+      const yTicks = config.yTicks.map((tick) => typeof tick === "number" ? { value: tick, label: fmt(tick, tick % 1 === 0 ? 0 : 2) } : tick);
+      yTicks.forEach((tick) => {
+        line(svg, dims.left, config.yScale(tick.value), dims.right, config.yScale(tick.value), { class: "grid-line" });
+        line(svg, dims.left - 5, config.yScale(tick.value), dims.left, config.yScale(tick.value), { stroke: palette.axis });
+        drawText(svg, dims.left - 10, config.yScale(tick.value) + 4, tick.label, "mark-label", "end", palette.muted);
+      });
+      config.xTicks.forEach((tick) => {
+        line(svg, tick.x, dims.bottom, tick.x, dims.bottom + 5, { stroke: palette.axis });
+        drawText(svg, tick.x, dims.bottom + 24, tick.label, "mark-label", "middle", palette.muted);
+      });
+      line(svg, dims.left, dims.bottom, dims.right, dims.bottom, { stroke: palette.axis, "stroke-width": 1.2 });
+      line(svg, dims.left, dims.top, dims.left, dims.bottom, { stroke: palette.axis, "stroke-width": 1.2 });
+      drawText(svg, (dims.left + dims.right) / 2, 505, config.xLabel, "mark-label", "middle", palette.text, 13, 650);
+      rotatedText(svg, config.yLabelX ?? 22, (dims.top + dims.bottom) / 2, config.yLabel, palette.text);
+    }
+
+    function drawRightAxis(svg, dims, yScale, tickValues, label) {
+      line(svg, dims.right, dims.top, dims.right, dims.bottom, { stroke: palette.axis, "stroke-width": 1.2 });
+      tickValues.forEach((value) => {
+        line(svg, dims.right, yScale(value), dims.right + 5, yScale(value), { stroke: palette.axis });
+        drawText(svg, dims.right + 10, yScale(value) + 4, fmt(value, 0), "mark-label", "start", palette.muted);
+      });
+      const text = textEl(908, (dims.top + dims.bottom) / 2, label, "mark-label", "middle", palette.text, 13, 650);
+      text.setAttribute("transform", `rotate(90 908 ${(dims.top + dims.bottom) / 2})`);
+      svg.appendChild(text);
+    }
+
+    function drawReferenceLine(svg, dims, y, label) {
+      line(svg, dims.left, y, dims.right, y, { stroke: "#9c7d21", "stroke-width": 1.2, "stroke-dasharray": "5 5" });
+      drawText(svg, dims.right - 4, y - 7, label, "mark-label", "end", "#7a5c00");
+    }
+
+    function drawLine(svg, points, xScale, yScale, color, dash = "") {
+      const pathData = points.map((point, index) => `${index === 0 ? "M" : "L"} ${xScale(point.x).toFixed(2)} ${yScale(point.y).toFixed(2)}`).join(" ");
+      path(svg, pathData, { fill: "none", stroke: color, "stroke-width": 3, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": dash });
+    }
+
+    function drawPoints(svg, points, xScale, yScale, color) {
+      points.forEach((point) => {
+        circle(svg, xScale(point.x), yScale(point.y), 4.5, { fill: "#ffffff", stroke: color, "stroke-width": 2.2 });
+      });
+    }
+
+    function drawLegend(svg, items, x, y) {
+      let cursor = x;
+      items.forEach((item) => {
+        if (item.square) {
+          rect(svg, cursor, y - 9, 18, 10, { fill: item.color, rx: 2 });
+        } else {
+          line(svg, cursor, y - 4, cursor + 22, y - 4, { stroke: item.color, "stroke-width": 3, "stroke-dasharray": item.dash || "" });
+          circle(svg, cursor + 11, y - 4, 3, { fill: "#fff", stroke: item.color, "stroke-width": 1.6 });
+        }
+        drawText(svg, cursor + 28, y, item.label, "mark-label", "start", palette.text);
+        cursor += Math.max(86, item.label.length * 9 + 54);
+      });
+    }
+
+    function drawHeatLegend(svg, x, y, h, min, max) {
+      const steps = 80;
+      for (let i = 0; i < steps; i += 1) {
+        const t0 = i / steps;
+        const value = min * Math.pow(max / min, t0);
+        rect(svg, x, y + h - (i + 1) * h / steps, 22, h / steps + 0.5, { fill: heatColor(value, min, max) });
+      }
+      rect(svg, x, y, 22, h, { fill: "none", stroke: "#8b9891" });
+      drawText(svg, x + 34, y + 5, `${fmt(max, 0)}×`, "mark-label", "start", palette.muted);
+      drawText(svg, x + 34, y + h, `${fmt(min, 0)}×`, "mark-label", "start", palette.muted);
+    }
+
+    function scaleLinear(domain, range) {
+      const [d0, d1] = domain;
+      const [r0, r1] = range;
+      return (value) => r0 + ((value - d0) / (d1 - d0)) * (r1 - r0);
+    }
+
+    function scaleLog2(domain, range) {
+      const [d0, d1] = domain.map((value) => Math.log2(value));
+      const [r0, r1] = range;
+      return (value) => r0 + ((Math.log2(value) - d0) / (d1 - d0)) * (r1 - r0);
+    }
+
+    function bandScale(labels, range, padding = 0.2) {
+      const [r0, r1] = range;
+      const n = labels.length;
+      const step = (r1 - r0) / n;
+      const bandwidth = step * (1 - padding);
+      const offset = step * padding / 2;
+      return {
+        bandwidth,
+        start: (label) => r0 + labels.indexOf(label) * step + offset,
+        center: (label) => r0 + labels.indexOf(label) * step + step / 2
+      };
+    }
+
+    function ticks(min, max, count) {
+      if (count <= 1) return [min];
+      const step = (max - min) / (count - 1);
+      return Array.from({ length: count }, (_, index) => +(min + step * index).toFixed(6));
+    }
+
+    function niceMax(value) {
+      if (value <= 0) return 1;
+      const pow = Math.pow(10, Math.floor(Math.log10(value)));
+      const scaled = value / pow;
+      const nice = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
+      return nice * pow;
+    }
+
+    function heatColor(value, min, max) {
+      const t = Math.max(0, Math.min(1, (Math.log(value) - Math.log(min)) / (Math.log(max) - Math.log(min))));
+      const stops = [
+        [246, 241, 222],
+        [142, 188, 162],
+        [42, 122, 112],
+        [65, 63, 116]
+      ];
+      const scaled = t * (stops.length - 1);
+      const index = Math.min(stops.length - 2, Math.floor(scaled));
+      const local = scaled - index;
+      const a = stops[index];
+      const b = stops[index + 1];
+      const rgb = a.map((channel, i) => Math.round(channel + (b[i] - channel) * local));
+      return `rgb(${rgb.join(",")})`;
+    }
+
+    function unique(values) {
+      return [...new Set(values.filter((value) => value !== null && !Number.isNaN(value)))];
+    }
+
+    function num(value) {
+      if (value === null || value === undefined || value === "") return null;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function fmt(value, digits = 2) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "";
+      const fixed = Number(value).toFixed(digits);
+      if (digits === 0) return fixed;
+      return fixed.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+    }
+
+    function pct(value) {
+      return `${fmt(value * 100, 1)}%`;
+    }
+
+    function paramsLabel(value) {
+      return `${fmt(value / 1e6, 1)}M`;
+    }
+
+    function assertRows(rows, message) {
+      if (!rows || rows.length === 0) {
+        throw new Error(message);
+      }
+    }
+
+    function fillSelect(id, values, labeler, selectedValue) {
+      const select = document.getElementById(id);
+      select.innerHTML = "";
+      values.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = String(value);
+        option.textContent = labeler(value);
+        option.selected = value === selectedValue;
+        select.appendChild(option);
+      });
+      if (![...select.options].some((option) => option.selected) && select.options.length > 0) {
+        select.options[select.options.length - 1].selected = true;
+      }
+    }
+
+    function readSelectNumber(id) {
+      return Number(document.getElementById(id).value);
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function setStatus(message) {
+      document.getElementById("status").textContent = message;
+    }
+
+    function showError(message) {
+      const box = document.getElementById("error");
+      box.textContent = message;
+      box.style.display = message ? "block" : "none";
+    }
+
+    function svgEl(name, attrs = {}) {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value !== "" && value !== null && value !== undefined) {
+          node.setAttribute(key, value);
+        }
+      });
+      return node;
+    }
+
+    function rect(svg, x, y, width, height, attrs = {}) {
+      const node = svgEl("rect", { x, y, width, height, ...attrs });
+      svg.appendChild(node);
+      return node;
+    }
+
+    function line(svg, x1, y1, x2, y2, attrs = {}) {
+      const node = svgEl("line", { x1, y1, x2, y2, ...attrs });
+      svg.appendChild(node);
+      return node;
+    }
+
+    function circle(svg, cx, cy, r, attrs = {}) {
+      const node = svgEl("circle", { cx, cy, r, ...attrs });
+      svg.appendChild(node);
+      return node;
+    }
+
+    function path(svg, d, attrs = {}) {
+      const node = svgEl("path", { d, ...attrs });
+      svg.appendChild(node);
+      return node;
+    }
+
+    function textEl(x, y, content, className = "mark-label", anchor = "start", fill = palette.text, size = 12, weight = 500) {
+      const node = svgEl("text", {
+        x,
+        y,
+        class: className,
+        "text-anchor": anchor,
+        fill,
+        "font-size": size,
+        "font-weight": weight,
+        "font-family": "-apple-system, BlinkMacSystemFont, Segoe UI, Microsoft YaHei, sans-serif"
+      });
+      node.textContent = content;
+      return node;
+    }
+
+    function drawText(svg, x, y, content, className = "mark-label", anchor = "start", fill = palette.text, size = 12, weight = 500) {
+      const node = textEl(x, y, content, className, anchor, fill, size, weight);
+      svg.appendChild(node);
+      return node;
+    }
+
+    function rotatedText(svg, x, y, content, fill) {
+      const node = textEl(x, y, content, "mark-label", "middle", fill, 13, 650);
+      node.setAttribute("transform", `rotate(-90 ${x} ${y})`);
+      svg.appendChild(node);
+      return node;
+    }
+
+    async function exportSvgAsPng(id, fileName) {
+      const svg = document.getElementById(id);
+      const clone = svg.cloneNode(true);
+      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      clone.setAttribute("width", "1880");
+      clone.setAttribute("height", "1080");
+      const xml = new XMLSerializer().serializeToString(clone);
+      const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+      const image = new Image();
+      image.decoding = "async";
+      const loaded = new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+      });
+      image.src = url;
+      await loaded;
+      const canvas = document.createElement("canvas");
+      canvas.width = 1880;
+      canvas.height = 1080;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      const pngUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = pngUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+  </script>
+</body>
+</html>
